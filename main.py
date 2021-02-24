@@ -66,9 +66,21 @@ class Blockchain:
 		self.unconfirmed_transactions = [] 
 		return True
 
-# b = Blockchain()
-# b.genesis_block()
-# print(b.chain[0].hash)
-# b.unconfirmed_transactions = ['elon paid me 7 bitcoin', 'george paid me 3 ETH']
-# b.mine()
-# print(b.chain[-1].hash)
+	def is_valid_chain(self):
+		for i in range(len(self.chain) - 1):
+			print(i)
+			if self.is_valid_proof(self.chain[i]):
+				if self.chain[i+1].prev_hash == self.chain[i].hash:
+					return True
+		print(self.chain[i+1].prev_hash, self.chain[i].hash)
+		return False
+
+b = Blockchain()
+b.genesis_block()
+print(b.chain[0].hash)
+b.unconfirmed_transactions = ['elon paid me 7 bitcoin', 'george paid me 3 ETH']
+b.mine()
+print(b.chain[-1].hash)
+print(b.is_valid_chain()) #giving false due to is_valid_proof() of genesis block
+
+# TODO: does genesis block require mining, getback reading, refer other's code.
