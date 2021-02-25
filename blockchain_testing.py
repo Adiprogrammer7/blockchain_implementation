@@ -3,10 +3,11 @@ import ecdsa
 
 # to_string() gives in bytes format, then hex() coverts it in hex format in string.
 private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
-print(private_key.to_string().hex())
+print(private_key.to_string().hex()) #PRIVATE KEY
 public_key = private_key.get_verifying_key()
 print(public_key.to_string().hex())
-print(base64.b64encode(public_key.to_string())) #encodes bytes format to ascii string format
+print(base64.b64encode(public_key.to_string())) #encodes bytes format to ascii string format but still in bytes format.
+print(base64.b64encode(public_key.to_string()).decode()) #actual ascii string. # PUBLIC KEY
 
 
 # import hashlib

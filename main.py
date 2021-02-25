@@ -36,7 +36,7 @@ class Blockchain:
 		return self.chain[-1]
 
 	def add_transcation(self, from_address, to_address, amount):
-		
+		pass
 	
 	# the block should have valid prev_hash and valid proof_of_work to be added in blockchain.
 	def add_block(self, block):
@@ -89,4 +89,4 @@ class Blockchain:
 # print(b.is_valid_chain()) 
 
 # Inferences:
-# TODO: refer other's code.
+# TODO: sk, pk stuff from wallet.py, getback reading, hex, ascii, unicode stuff.
