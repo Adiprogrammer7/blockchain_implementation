@@ -27,7 +27,7 @@ class Blockchain:
 
 	# genesis block is the first block in a blockchain, its prev_hash would be 0
 	def genesis_block(self):
-		# TODO: passing whole list of transactions and not the individual transactions.
+		# TODO: passing whole list of transactions and not the individual transactions also genesis block is not mined.
 		g_block = Block(0, datetime.now(), [], 0, 0)
 		self.chain.append(g_block)
 
@@ -54,33 +54,36 @@ class Blockchain:
 			add it to blockchain'''
 		if not self.unconfirmed_transactions:
 			return False
-		print(self.unconfirmed_transactions)
+
 		new_block = Block(index= self.last_block.index + 1, timestamp= datetime.now(), 
 					transactions= self.unconfirmed_transactions, prev_hash= self.last_block.hash)
 
 		#Calulates proof_of_work
 		while not new_block.hash.startswith('0' * self.zeros_difficulty):
 			new_block.proof_of_work += 1
-		print(new_block.__dict__)
+
 		self.add_block(new_block)
 		self.unconfirmed_transactions = [] 
 		return True
 
 	def is_valid_chain(self):
-		for i in range(len(self.chain) - 1):
-			print(i)
+		for i in range(1, len(self.chain) - 1):
 			if self.is_valid_proof(self.chain[i]):
 				if self.chain[i+1].prev_hash == self.chain[i].hash:
 					return True
 		print(self.chain[i+1].prev_hash, self.chain[i].hash)
 		return False
 
-b = Blockchain()
-b.genesis_block()
-print(b.chain[0].hash)
-b.unconfirmed_transactions = ['elon paid me 7 bitcoin', 'george paid me 3 ETH']
-b.mine()
-print(b.chain[-1].hash)
-print(b.is_valid_chain()) #giving false due to is_valid_proof() of genesis block
+# b = Blockchain()
+# b.genesis_block()
+# b.unconfirmed_transactions = ['elon paid me 7 bitcoin', 'george paid me 3 ETH']
+# b.mine()
+# b.unconfirmed_transactions = ['elon paid me 100 bitcoins', 'george paid me 10 ETH']
+# b.mine()
+# b.unconfirmed_transactions = ['elon paid me 100 bitcoins', 'george paid me 10 ETH', 'joe paid me 100 $', 'leo paid me 20 ETH' ]
+# b.mine()
+# print(b.chain[-1].hash)
+# print(b.is_valid_chain()) 
 
-# TODO: does genesis block require mining, getback reading, refer other's code.
+# Inferences:
+# TODO: refer other's code.
