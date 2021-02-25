@@ -34,6 +34,9 @@ class Blockchain:
 	@property 
 	def last_block(self):
 		return self.chain[-1]
+
+	def add_transcation(self, from_address, to_address, amount):
+		
 	
 	# the block should have valid prev_hash and valid proof_of_work to be added in blockchain.
 	def add_block(self, block):
