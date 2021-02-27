@@ -1,5 +1,8 @@
 from hashlib import sha256
 from datetime import datetime
+from ecdsa import SigningKey, SECP256k1
+from base64 import b64encode 
+import json
 
 class Block:
 	def __init__(self, index, timestamp, transactions, prev_hash, proof_of_work=0):
@@ -88,5 +91,38 @@ class Blockchain:
 # print(b.chain[-1].hash)
 # print(b.is_valid_chain()) 
 
-# Inferences:
-# TODO: sk, pk stuff from wallet.py, getback reading, hex, ascii, unicode stuff.
+# TODO: no. of transactions in block class, 
+
+class Transaction:
+	def __init__(self, transaction_timestamp, from_addr, to_addr, amount):
+		self.transaction_timestamp = transaction_timestamp
+		self.from_addr = from_addr
+		self.to_addr = to_addr
+		self.amount = amount
+
+	# to return transaction attributes in dict format.
+	def return_transaction(self):
+		return self.__dict__
+
+# t = Transaction('sdf', 0, 1, 2)
+# print(t.return_transaction())
+
+
+def generate_wallet():
+	'''
+	- private/secret/signing key(sk) will be used to generate signature which can be verified with 
+	the public key(pk) associated with that private key only.
+	- to_string() will give bytes format then hex() will give hexcode in string format.
+	- we gonna use b64encode to encode public key in ascii to make it shorter.
+	'''
+	sk = SigningKey.generate(curve= SECP256k1) #gives SigningKey object
+	readable_sk = sk.to_string().hex() 
+	pk = sk.get_verifying_key() #public key corresponding to private key
+	readable_pk = b64encode(pk.to_string()).decode()
+	
+	# saving in file
+	with open('wallet.txt', 'w') as file:
+		file.write("Private Key/Signing Key: {}\nPublic Key/Wallet Address: {}".format(readable_sk, readable_pk))
+	print("Your credentials saved in 'wallet.txt' file!")
+
+generate_wallet()
