@@ -30,8 +30,7 @@ class Blockchain:
 
 	# genesis block is the first block in a blockchain, its prev_hash would be 0
 	def genesis_block(self):
-		# TODO: passing whole list of transactions and not the individual transactions also genesis block is not mined.
-		g_block = Block(0, datetime.now(), [], 0, 0)
+		g_block = Block(0, str(datetime.now()), [], 0, 0)
 		self.chain.append(g_block)
 
 	@property 
@@ -61,7 +60,7 @@ class Blockchain:
 		if not self.unconfirmed_transactions:
 			return False
 
-		new_block = Block(index= self.last_block.index + 1, timestamp= datetime.now(), 
+		new_block = Block(index= self.last_block.index + 1, timestamp= str(datetime.now()), 
 					transactions= self.unconfirmed_transactions, prev_hash= self.last_block.hash)
 
 		#Calulates proof_of_work
@@ -70,7 +69,7 @@ class Blockchain:
 
 		self.add_block(new_block)
 		self.unconfirmed_transactions = [] 
-		return True
+		return new_block
 
 	def is_valid_chain(self):
 		for i in range(1, len(self.chain) - 1):
@@ -91,8 +90,6 @@ class Blockchain:
 # print(b.chain[-1].hash)
 # print(b.is_valid_chain()) 
 
-# TODO: no. of transactions in block class, 
-
 class Transaction:
 	def __init__(self, transaction_timestamp, from_addr, to_addr, amount):
 		self.transaction_timestamp = transaction_timestamp
@@ -101,8 +98,8 @@ class Transaction:
 		self.amount = amount
 
 	# to return transaction attributes in dict format.
-	def return_transaction(self):
-		return self.__dict__
+# 	def return_transaction(self):
+# 		return self.__dict__
 
 # t = Transaction('sdf', 0, 1, 2)
 # print(t.return_transaction())
@@ -125,4 +122,12 @@ def generate_wallet():
 		file.write("Private Key/Signing Key: {}\nPublic Key/Wallet Address: {}".format(readable_sk, readable_pk))
 	print("Your credentials saved in 'wallet.txt' file!")
 
-generate_wallet()
+
+def generate_signature(sk, msg):
+	signature = sk.sign(msg)
+	return signature
+
+def is_valid_signature(pk, signature, msg):
+	return pk.verify(signature, msg)
+
+# TODO: specifically validate for genesis block, no. of transactions in block class, write consensus node stuff
