@@ -4,7 +4,7 @@ from ecdsa import SigningKey, SECP256k1
 from base64 import b64encode 
 import json
 import requests
-from flask import request 
+from flask import request
 
 class Block:
 	def __init__(self, index, timestamp, transactions, prev_hash, proof_of_work=0):
@@ -37,14 +37,17 @@ class Blockchain:
 
 	@property 
 	def last_block(self):
-		return self.chain[-1]
+		if self.chain:
+			return self.chain[-1]
+		else:
+			return False
 
 	def add_transcation(self, from_address, to_address, amount):
 		pass
 	
 	# the block should have valid prev_hash and valid proof_of_work to be added in blockchain.
 	def add_block(self, block):
-		if self.last_block.hash == block.prev_hash:
+		if self.last_block and self.last_block.hash == block.prev_hash:
 			if self.is_valid_proof(block):
 				self.chain.append(block)
 				return True
@@ -74,37 +77,42 @@ class Blockchain:
 		return new_block
 
 	def is_valid_chain(self):
-		for i in range(1, len(self.chain) - 1):
+		for i in range(1, len(self.chain)):
 			if self.is_valid_proof(self.chain[i]):
-				if self.chain[i+1].prev_hash == self.chain[i].hash:
+				if self.chain[i].prev_hash == self.chain[i-1].hash:
 					return True
-		print(self.chain[i+1].prev_hash, self.chain[i].hash)
 		return False
+
+	# creates Blockchain obj. based on list received.
+	def create_temp_chain(self, blockchain_list):
+		temp_blockchain = Blockchain()
+		temp_blockchain.genesis_block()
+		print('1', temp_blockchain.chain)
+		print(blockchain_list)
+		for block in blockchain_list[1:]: #because genesis block would be already there.
+			temp_block = Block(block['index'], block['timestamp'], block['transactions'], block['prev_hash'], block['proof_of_work'])
+			print('2', temp_block)
+			temp_blockchain.add_block(temp_block)
+		return temp_blockchain
 
 	def consensus(self, peers):
 		for peer in peers:
 			response = requests.get(peer+'chain')
 			if response.status_code == 200:
-				chain = response.json()
-				if len(chain) > len(self.chain) and self.is_valid_chain(chain): #discovered a new longer and valid chain
-					self.chain = chain
+				chain = response.json()['blockchain']
+				print(chain)
+				temp_blockchain = self.create_temp_chain(chain)
+				print(temp_blockchain.chain)
+				if len(temp_blockchain.chain) > len(self.chain) and temp_blockchain.is_valid_chain(): #discovered a new longer and valid chain
+					self.chain = temp_blockchain.chain
 					return True
 				else:
 					return False
 
 	def announce_block(self, peers, block_obj):
-		block_data = {
-		'index': block_obj.index,
-		'timestamp': block_obj.timestamp,
-		'transactions': block_obj.transactions, 
-		'prev_hash': block_obj.prev_hash,
-		'proof_of_work': block_obj.proof_of_work,
-		'hash': block_obj.hash
-		}
 		for peer in peers:
 			if peer != request.host_url:
-				response = requests.post(peer+'add_block', data= json.dumps(block_data))
-
+				response = requests.post(peer+'add_block', json= block_obj.__dict__)
 
 
 # b = Blockchain()
@@ -158,9 +166,10 @@ def generate_signature(sk, msg):
 def is_valid_signature(pk, signature, msg):
 	return pk.verify(signature, msg)
 
-# TODO: testing, specifically validate for genesis block in is_valid_chain, no. of transactions in block class
+'''TODO: consensus didn't worked sometimes so check it in browser, add documentation, 
+specifically validate for genesis block in is_valid_chain, no. of transactions in block class'''
 # set FLASK_APP=main.py
-# flask run --port 5000 --debugger
+# flask run --port 5000 --debugger --reload
 
 
 # # to_string() gives in bytes format, then hex() coverts it in hex code in string format.
