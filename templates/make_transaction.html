@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <title>Blockchain Implementation</title>
+</head>
+<body>
+<!-- using some stuff from bootstrap to make it look nice! -->
+<div class="container">
+  <form action="{{ url_for('make_transaction') }}" method="post">
+    <div class="form-group">
+      <br>
+      <label for="publicKey">Public Key</label>
+      <input type="text" name="pk" class="form-control" id="publicKey" placeholder="Enter your wallet address..">
+    </div>
+    <div class="form-group">
+      <label for="toAddress">Recipient's Address</label>
+      <input type="text" name="to_addr" class="form-control" id="toAddress" placeholder="Enter beneficiary's wallet address..">
+    </div>
+    <div class="form-group">
+      <label for="amt">Amount</label>
+      <input type="number" name="amount" class="form-control" id="amt" placeholder="Enter transaction amount..">
+    </div>
+    <div class="form-group">
+      <label for="privateKey">Private Key</label>
+      <input type="password" name="sk" class="form-control" id="privateKey" aria-describedby="note" placeholder="Enter your private key..">
+      <small id="note" class="form-text text-muted">We'll never share your private key, it will only be used for generating signature on transaction.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Make Transaction</button>
+    <button type="reset" class="btn btn-danger">Reset</button>
+  </form>
+<div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from hashlib import sha256
 from datetime import datetime
-from ecdsa import SigningKey, SECP256k1
+from ecdsa import SigningKey, SECP256k1, VerifyingKey
 from base64 import b64encode 
 import json
 import requests
@@ -41,9 +41,6 @@ class Blockchain:
 			return self.chain[-1]
 		else:
 			return False
-
-	def add_transcation(self, from_address, to_address, amount):
-		pass
 	
 	# the block should have valid prev_hash and valid proof_of_work to be added in blockchain.
 	def add_block(self, block):
@@ -53,28 +50,42 @@ class Blockchain:
 				return True
 		return False
 
-	# checking if block hash(calculated with proof_of_work) starts with given no. of zeros_difficulty
-	def is_valid_proof(self, block):
-		if block.hash.startswith('0' * self.zeros_difficulty):
-			return True
-
 	def mine(self):
 		'''this adds all unconfirmed transactions into a block and
 			finds valid proof_of_work for that block in order to 
 			add it to blockchain'''
 		if not self.unconfirmed_transactions:
 			return False
+		else:
+			for transaction in self.unconfirmed_transactions:
+				if not is_valid_transaction(transaction): 
+					self.unconfirmed_transactions.remove(transaction) # removing invalid transactions.
 
-		new_block = Block(index= self.last_block.index + 1, timestamp= str(datetime.now()), 
-					transactions= self.unconfirmed_transactions, prev_hash= self.last_block.hash)
+			new_block = Block(index= self.last_block.index + 1, timestamp= str(datetime.now()), 
+						transactions= self.unconfirmed_transactions, prev_hash= self.last_block.hash)
 
-		#Calulates proof_of_work
-		while not new_block.hash.startswith('0' * self.zeros_difficulty):
-			new_block.proof_of_work += 1
+			#Calulates proof_of_work
+			while not new_block.hash.startswith('0' * self.zeros_difficulty):
+				new_block.proof_of_work += 1
 
-		self.add_block(new_block)
-		self.unconfirmed_transactions = [] 
-		return new_block
+			self.add_block(new_block)
+			self.unconfirmed_transactions = [] 
+			return new_block
+			return True
+
+	def is_valid_transaction(self, transaction_dict):
+		signature = transaction_dict['signature']
+		signature = bytes.fromhex(signature) #converting hex string back to bytes to be able to verify.
+		public_key = transaction_dict['message']['from_addr']
+		public_key = VerifyingKey.from_string(bytes.fromhex(public_key), curve=SECP256k1) #getting public key in bytes from public key in hex string format.
+		msg = json.dumps(transaction_dict['message']).encode() #converting msg back in bytes format.
+		if public_key.verify(signature, msg):
+			return True
+		return False
+
+	# checking if block hash(calculated with proof_of_work) starts with given no. of zeros_difficulty
+	def is_valid_proof(self, block):
+		if block.hash.startswith('0' * self.zeros_difficulty):
 
 	def is_valid_chain(self):
 		for i in range(1, len(self.chain)):
@@ -118,6 +129,17 @@ class Blockchain:
 			if peer != request.host_url:
 				response = requests.post(peer+'add_block', json= block_obj.__dict__)
 
+	def generate_signature(self, readable_sk, msg):
+		# converting from readable format to SigningKey object.
+		sk = ecdsa.SigningKey.from_string(bytes.fromhex(readable_sk), curve=SECP256k1)
+		msg = json.dumps(msg).encode() #to convert dict to bytes like object
+		return sk.sign(msg)
+
+	def announce_transaction(self, peers, transaction_dict):
+		for peer in peers:
+			response = requests.post(peer+'add_transcation', json= transaction_dict)
+
+
 
 # b = Blockchain()
 # b.genesis_block()
@@ -150,12 +172,11 @@ def generate_wallet():
 	- private/secret/signing key(sk) will be used to generate signature which can be verified with 
 	the public key(pk) associated with that private key only.
 	- to_string() will give bytes format then hex() will give hexcode in string format.
-	- we gonna use b64encode to encode public key in ascii to make it shorter.
 	'''
 	sk = SigningKey.generate(curve= SECP256k1) #gives SigningKey object
 	readable_sk = sk.to_string().hex() 
 	pk = sk.get_verifying_key() #public key corresponding to private key
-	readable_pk = b64encode(pk.to_string()).decode()
+	readable_pk = pk.to_string().hex()
 	
 	# saving in file
 	with open('wallet.txt', 'w') as file:
