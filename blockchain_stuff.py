@@ -88,26 +88,30 @@ class Blockchain:
 		temp_blockchain = Blockchain()
 		temp_blockchain.genesis_block()
 		print('1', temp_blockchain.chain)
-		print(blockchain_list)
+		print('2',blockchain_list)
 		for block in blockchain_list[1:]: #because genesis block would be already there.
 			temp_block = Block(block['index'], block['timestamp'], block['transactions'], block['prev_hash'], block['proof_of_work'])
-			print('2', temp_block)
+			print('3', temp_block)
 			temp_blockchain.add_block(temp_block)
 		return temp_blockchain
 
 	def consensus(self, peers):
+		longest_chain = self.chain
 		for peer in peers:
-			response = requests.get(peer+'chain')
-			if response.status_code == 200:
+			if peer != request.host_url: #to check others chain, not current url's chain.
+				response = requests.get(peer+'chain')
 				chain = response.json()['blockchain']
 				print(chain)
 				temp_blockchain = self.create_temp_chain(chain)
-				print(temp_blockchain.chain)
-				if len(temp_blockchain.chain) > len(self.chain) and temp_blockchain.is_valid_chain(): #discovered a new longer and valid chain
-					self.chain = temp_blockchain.chain
-					return True
-				else:
-					return False
+				print('4',temp_blockchain.chain)
+				if len(temp_blockchain.chain) > len(longest_chain) and temp_blockchain.is_valid_chain(): #finding longest chain
+					longest_chain = temp_blockchain.chain
+		
+		if longest_chain != self.chain:  #means longest chain is not ours.
+			self.chain = longest_chain
+			return True
+
+		return False
 
 	def announce_block(self, peers, block_obj):
 		for peer in peers:
@@ -166,7 +170,7 @@ def generate_signature(sk, msg):
 def is_valid_signature(pk, signature, msg):
 	return pk.verify(signature, msg)
 
-'''TODO: consensus didn't worked sometimes so check it in browser, add documentation, 
+'''TODO: double mining by both nodes, add documentation, jsonify doesn't work, 
 specifically validate for genesis block in is_valid_chain, no. of transactions in block class'''
 # set FLASK_APP=main.py
 # flask run --port 5000 --debugger --reload
