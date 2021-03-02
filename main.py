@@ -10,10 +10,9 @@ app.config['JSON_SORT_KEYS'] = False
 
 blockchain = Blockchain()
 blockchain.genesis_block()
-blockchain.unconfirmed_transactions = ['elon paid me 100 bitcoins', 'george paid me 10 ETH']
 
 @app.route('/', methods= ['GET', 'POST'])
-def make_transaction():
+def index():
 	if request.method == 'POST':
 		return url_for('make_transaction')
 	else:
@@ -22,6 +21,7 @@ def make_transaction():
 
 @app.route('/chain', methods=['GET'])
 def display_chain():
+	print(blockchain.unconfirmed_transactions)
 	blocks = []
 	for each_block in blockchain.chain:
 		blocks.append(each_block.__dict__)
@@ -35,7 +35,7 @@ def mining():
 	mined_block = blockchain.mine()
 	if mined_block:
 		print(mined_block)
-		# blockchain.announce_block(peers, mined_block)
+		blockchain.announce_block(peers, mined_block)
 		return jsonify({
 			'index': mined_block.index,
 			'timestamp': mined_block.timestamp,
@@ -58,7 +58,10 @@ def chain_conflict():
 @app.route('/add_block', methods=['POST'])
 def add_block():
 	block_data = request.get_json()
-	# here verify is block_data['transaction'] is same as unconfirmed transactions.
+	print(block_data)
+	# clearing the blockchain.unconfirmed_transaction after block having those transaction got mined.
+	if block_data['transactions'] == blockchain.unconfirmed_transactions:
+		blockchain.unconfirmed_transactions = []
 	block = Block(block_data['index'], block_data['timestamp'], block_data['transactions'], block_data['prev_hash'], block_data['proof_of_work'])
 	added = blockchain.add_block(block)
 	if not added:
@@ -74,10 +77,10 @@ def make_transaction():
 	readable_sk = request.form.get('sk')
 	timestamp = str(datetime.now())
 	msg = {'timestamp': timestamp, 'from_addr': readable_pk, 'to_addr': to_addr, 'amount': amount}
-	signature = self.generate_signature(readable_sk, msg)
+	signature = blockchain.generate_signature(readable_sk, msg)
 	signature = signature.hex() #converting bytes type to hex string, so it will be accepted by json.
-	self.announce_transaction(peers, {'message': msg, 'signature': signature})
-	# print(pk, to_addr, amount, sk)
+	blockchain.announce_transaction(peers, {'message': msg, 'signature': signature})
+	print({'message': msg, 'signature': signature})
 	return "Transaction has been made!"
 
 # to add in unconfirmed_transactions list of all peers.
@@ -85,8 +88,8 @@ def make_transaction():
 def add_transaction():
 	transaction_dict = request.get_json()
 	print(transaction_dict)
-	self.unconfirmed_transactions.append(transaction_dict)
-	# now during mining transaction will be verified from signature.
+	blockchain.unconfirmed_transactions.append(transaction_dict)
+	return "Transaction added to unconfirmed_transactions and is ready to be mined!"
 
 @app.route('/peers', methods= ["GET"])
 def display_peers():

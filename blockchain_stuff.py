@@ -58,7 +58,7 @@ class Blockchain:
 			return False
 		else:
 			for transaction in self.unconfirmed_transactions:
-				if not is_valid_transaction(transaction): 
+				if not self.is_valid_transaction(transaction): 
 					self.unconfirmed_transactions.remove(transaction) # removing invalid transactions.
 
 			new_block = Block(index= self.last_block.index + 1, timestamp= str(datetime.now()), 
@@ -86,6 +86,7 @@ class Blockchain:
 	# checking if block hash(calculated with proof_of_work) starts with given no. of zeros_difficulty
 	def is_valid_proof(self, block):
 		if block.hash.startswith('0' * self.zeros_difficulty):
+			return True
 
 	def is_valid_chain(self):
 		for i in range(1, len(self.chain)):
@@ -131,13 +132,13 @@ class Blockchain:
 
 	def generate_signature(self, readable_sk, msg):
 		# converting from readable format to SigningKey object.
-		sk = ecdsa.SigningKey.from_string(bytes.fromhex(readable_sk), curve=SECP256k1)
+		sk = SigningKey.from_string(bytes.fromhex(readable_sk), curve=SECP256k1)
 		msg = json.dumps(msg).encode() #to convert dict to bytes like object
 		return sk.sign(msg)
 
 	def announce_transaction(self, peers, transaction_dict):
 		for peer in peers:
-			response = requests.post(peer+'add_transcation', json= transaction_dict)
+			response = requests.post(peer+'add_transaction', json= transaction_dict)
 
 
 
