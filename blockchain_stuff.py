@@ -1,34 +1,32 @@
 from hashlib import sha256
 from datetime import datetime
 from ecdsa import SigningKey, SECP256k1, VerifyingKey
-from base64 import b64encode 
 import json
 import requests
 from flask import request
 
 class Block:
-	def __init__(self, index, timestamp, transactions, prev_hash, proof_of_work=0):
+	def __init__(self, index, block_timestamp, transactions, prev_hash, proof_of_work=0):
 		self.index = index
-		self.timestamp = timestamp
+		self.block_timestamp = block_timestamp
 		self.transactions = transactions
 		self.prev_hash = prev_hash
 		self.proof_of_work = proof_of_work
 
-	# gives hash of complete block along with the proof of work
+	# hash of complete block along with the proof of work using sha256.
 	@property 
 	def hash(self):
-		block_string = str(self.index) + str(self.timestamp) + str(self.transactions) + str(self.prev_hash) + str(self.proof_of_work)
+		block_string = str(self.index) + str(self.block_timestamp) + str(self.transactions) + str(self.prev_hash) + str(self.proof_of_work)
 		return sha256(block_string.encode()).hexdigest()
 
-# b = Block(0, 0, 'got 7$', '4e370ce41af3ed217c1e6fd778', '0')
-# print(b.hash)
 
 class Blockchain:
 	def __init__(self):
-		#starts with this no. of zeros for proof_of_work
+		#hash should start with this no. of zeros for proof_of_work
 		self.zeros_difficulty = 2 
 		self.unconfirmed_transactions = []
 		self.chain = []
+		self.genesis_block() #genesis block will be created with initialization.
 
 	# genesis block is the first block in a blockchain, its prev_hash would be 0
 	def genesis_block(self):
@@ -57,11 +55,12 @@ class Blockchain:
 		if not self.unconfirmed_transactions:
 			return False
 		else:
+			# to consider only valid transaction by verifying signature.
 			for transaction in self.unconfirmed_transactions:
 				if not self.is_valid_transaction(transaction): 
-					self.unconfirmed_transactions.remove(transaction) # removing invalid transactions.
+					self.unconfirmed_transactions.remove(transaction) 
 
-			new_block = Block(index= self.last_block.index + 1, timestamp= str(datetime.now()), 
+			new_block = Block(index= self.last_block.index + 1, block_timestamp= str(datetime.now()), 
 						transactions= self.unconfirmed_transactions, prev_hash= self.last_block.hash)
 
 			#Calulates proof_of_work
@@ -73,6 +72,7 @@ class Blockchain:
 			return new_block
 			return True
 
+	# to verify signature of transaction.
 	def is_valid_transaction(self, transaction_dict):
 		signature = transaction_dict['signature']
 		signature = bytes.fromhex(signature) #converting hex string back to bytes to be able to verify.
@@ -88,6 +88,7 @@ class Blockchain:
 		if block.hash.startswith('0' * self.zeros_difficulty):
 			return True
 
+	# validates entire blockchain except genesis block.
 	def is_valid_chain(self):
 		for i in range(1, len(self.chain)):
 			if self.is_valid_proof(self.chain[i]):
@@ -98,15 +99,15 @@ class Blockchain:
 	# creates Blockchain obj. based on list received.
 	def create_temp_chain(self, blockchain_list):
 		temp_blockchain = Blockchain()
-		temp_blockchain.genesis_block()
 		print('1', temp_blockchain.chain)
 		print('2',blockchain_list)
 		for block in blockchain_list[1:]: #because genesis block would be already there.
-			temp_block = Block(block['index'], block['timestamp'], block['transactions'], block['prev_hash'], block['proof_of_work'])
+			temp_block = Block(block['index'], block['block_timestamp'], block['transactions'], block['prev_hash'], block['proof_of_work'])
 			print('3', temp_block)
 			temp_blockchain.add_block(temp_block)
 		return temp_blockchain
 
+	# to find the longest valid chain among all peers.
 	def consensus(self, peers):
 		longest_chain = self.chain
 		for peer in peers:
@@ -114,26 +115,28 @@ class Blockchain:
 				response = requests.get(peer+'chain')
 				chain = response.json()['blockchain']
 				print(chain)
+				# creating temp Blockchain obj. from json response to be able to use Blockchain's methods.
 				temp_blockchain = self.create_temp_chain(chain)
 				print('4',temp_blockchain.chain)
-				if len(temp_blockchain.chain) > len(longest_chain) and temp_blockchain.is_valid_chain(): #finding longest chain
+				if len(temp_blockchain.chain) > len(longest_chain) and temp_blockchain.is_valid_chain(): 
 					longest_chain = temp_blockchain.chain
 		
-		if longest_chain != self.chain:  #means longest chain is not ours.
+		if longest_chain != self.chain:  #means longest chain is not of current peer's.
 			self.chain = longest_chain
 			return True
-
 		return False
 
+	# announce block to other peers
 	def announce_block(self, peers, block_obj):
 		for peer in peers:
 			if peer != request.host_url:
 				response = requests.post(peer+'add_block', json= block_obj.__dict__)
 
 	def generate_signature(self, readable_sk, msg):
+		# msg is just a transaction dict.
 		# converting from readable format to SigningKey object.
 		sk = SigningKey.from_string(bytes.fromhex(readable_sk), curve=SECP256k1)
-		msg = json.dumps(msg).encode() #to convert dict to bytes like object
+		msg = json.dumps(msg).encode() #to convert msg dict to bytes like object
 		return sk.sign(msg)
 
 	def announce_transaction(self, peers, transaction_dict):
@@ -142,78 +145,16 @@ class Blockchain:
 
 
 
-# b = Blockchain()
-# b.genesis_block()
-# b.unconfirmed_transactions = ['elon paid me 7 bitcoin', 'george paid me 3 ETH']
-# b.mine()
-# b.unconfirmed_transactions = ['elon paid me 100 bitcoins', 'george paid me 10 ETH']
-# b.mine()
-# b.unconfirmed_transactions = ['elon paid me 100 bitcoins', 'george paid me 10 ETH', 'joe paid me 100 $', 'leo paid me 20 ETH' ]
-# b.mine()
-# print(b.chain[-1].hash)
-# print(b.is_valid_chain()) 
+'''TODO: add documentation, valid private and public key, remove print statements'''
 
-class Transaction:
-	def __init__(self, transaction_timestamp, from_addr, to_addr, amount):
-		self.transaction_timestamp = transaction_timestamp
-		self.from_addr = from_addr
-		self.to_addr = to_addr
-		self.amount = amount
-
-	# to return transaction attributes in dict format.
-# 	def return_transaction(self):
-# 		return self.__dict__
-
-# t = Transaction('sdf', 0, 1, 2)
-# print(t.return_transaction())
-
-
-def generate_wallet():
-	'''
-	- private/secret/signing key(sk) will be used to generate signature which can be verified with 
-	the public key(pk) associated with that private key only.
-	- to_string() will give bytes format then hex() will give hexcode in string format.
-	'''
-	sk = SigningKey.generate(curve= SECP256k1) #gives SigningKey object
-	readable_sk = sk.to_string().hex() 
-	pk = sk.get_verifying_key() #public key corresponding to private key
-	readable_pk = pk.to_string().hex()
-	
-	# saving in file
-	with open('wallet.txt', 'w') as file:
-		file.write("Private Key/Signing Key: {}\nPublic Key/Wallet Address: {}".format(readable_sk, readable_pk))
-	print("Your credentials saved in 'wallet.txt' file!")
-
-
-def generate_signature(sk, msg):
-	signature = sk.sign(msg)
-	return signature
-
-def is_valid_signature(pk, signature, msg):
-	return pk.verify(signature, msg)
-
-'''TODO: double mining by both nodes, add documentation, jsonify doesn't work, 
-specifically validate for genesis block in is_valid_chain, no. of transactions in block class'''
 # set FLASK_APP=main.py
 # flask run --port 5000 --debugger --reload
 
+'''
+private and public key samples:
+7dab777f0759fefdc763a7030821429d0b977408c6c21ae78043c56e6bdae896
+4a03d87720418f003d8fab1d3e8d8805588a4d9fee100a589f1c50b2112484facb4f3c3438a27445193ecdf4007d8325c04749f2b6e051dfae0ab1380df3fd16
 
-# # to_string() gives in bytes format, then hex() coverts it in hex code in string format.
-# private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
-# readable_private_key = private_key.to_string().hex()
-# print(readable_private_key) #readable private key
-# public_key = private_key.get_verifying_key()
-# print(public_key.to_string().hex())
-# print(base64.b64encode(public_key.to_string())) #encodes bytes format to ascii string format but still in bytes format.
-# readable_public_key = base64.b64encode(public_key.to_string()).decode() #actual ascii string. 
-# print(readable_public_key) # PUBLIC KEY readable
-
-# #using private_key object we can sign on bytes object which gives sign in bytes format and using public key we can verify it.
-# msg = b'hello'
-# signature = private_key.sign(msg)
-# print(public_key.verify(signature, msg)) #tells is the msg signed with private key associated with this public key.
-
-# # recreating private and public key objects from readable formats
-# recreated_private_key = ecdsa.SigningKey.from_string(bytes.fromhex(readable_private_key), curve=ecdsa.SECP256k1)
-# print(recreated_private_key) 
-# print(recreated_private_key.get_verifying_key())
+067a048e7dde0cf206d197cfba6c33451902fbab6bcfa83cef674c7a769aa04a
+48ef457d6dd90bbb1529c318587f3027d51b627706593ed06626186f360864f22bc01694538fc5a9d2917442e5a8b6693d9cd12bc2603cf2ba059ad16a1fbae9
+'''

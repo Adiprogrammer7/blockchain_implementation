@@ -1,16 +1,15 @@
-from flask import Flask, request, jsonify, redirect, url_for, render_template
-import requests
+from flask import Flask, request, jsonify, url_for, render_template
 from blockchain_stuff import Block, Blockchain
-import json
 from config_peers import peers
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['JSON_SORT_KEYS'] = False
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True #to enable pretty printing with jsonify.
+app.config['JSON_SORT_KEYS'] = False #to not sort while returning json response.
 
 blockchain = Blockchain()
-blockchain.genesis_block()
 
+# form to create new transaction
 @app.route('/', methods= ['GET', 'POST'])
 def index():
 	if request.method == 'POST':
@@ -18,32 +17,24 @@ def index():
 	else:
 		return render_template('make_transaction.html')
 
-
+# to view entire blockchain
 @app.route('/chain', methods=['GET'])
 def display_chain():
 	print(blockchain.unconfirmed_transactions)
 	blocks = []
 	for each_block in blockchain.chain:
 		blocks.append(each_block.__dict__)
-	return jsonify({
-		'blockchain': blocks,
-		'chain_length': len(blockchain.chain)
-		})
+	return jsonify({'blockchain': blocks, 
+					'chain_length': len(blockchain.chain)})
 
+# mine and announce block
 @app.route('/mine', methods=['GET'])
 def mining():
 	mined_block = blockchain.mine()
 	if mined_block:
 		print(mined_block)
 		blockchain.announce_block(peers, mined_block)
-		return jsonify({
-			'index': mined_block.index,
-			'timestamp': mined_block.timestamp,
-			'transactions': mined_block.transactions, 
-			'prev_hash': mined_block.prev_hash,
-			'proof_of_work': mined_block.proof_of_work,
-			'hash': mined_block.hash
-			})
+		return jsonify({'mined_block': mined_block.__dict__})
 	else:
 		return "Nothing to mine!!"
 
@@ -55,20 +46,22 @@ def chain_conflict():
 	else:
 		return "We are good, no conflict in blockchain!"
 
+# announced block gets added in blockchain
 @app.route('/add_block', methods=['POST'])
 def add_block():
 	block_data = request.get_json()
 	print(block_data)
-	# clearing the blockchain.unconfirmed_transaction after block having those transaction got mined.
+	# clearing the blockchain.unconfirmed_transaction after block having those transaction is already mined.
 	if block_data['transactions'] == blockchain.unconfirmed_transactions:
 		blockchain.unconfirmed_transactions = []
-	block = Block(block_data['index'], block_data['timestamp'], block_data['transactions'], block_data['prev_hash'], block_data['proof_of_work'])
+
+	block = Block(block_data['index'], block_data['block_timestamp'], block_data['transactions'], block_data['prev_hash'], block_data['proof_of_work'])
 	added = blockchain.add_block(block)
 	if not added:
 		return "The block was discarded by the node", 400
-
 	return "Block added to the chain", 201
 
+# receives form data from '/', generates signature and announces transaction.
 @app.route('/make_transaction', methods= ['POST'])
 def make_transaction():
 	readable_pk = request.form.get('pk')
@@ -76,14 +69,14 @@ def make_transaction():
 	amount = request.form.get('amount')
 	readable_sk = request.form.get('sk')
 	timestamp = str(datetime.now())
-	msg = {'timestamp': timestamp, 'from_addr': readable_pk, 'to_addr': to_addr, 'amount': amount}
+	msg = {'transaction_timestamp': timestamp, 'from_addr': readable_pk, 'to_addr': to_addr, 'amount': amount}
 	signature = blockchain.generate_signature(readable_sk, msg)
 	signature = signature.hex() #converting bytes type to hex string, so it will be accepted by json.
 	blockchain.announce_transaction(peers, {'message': msg, 'signature': signature})
 	print({'message': msg, 'signature': signature})
 	return "Transaction has been made!"
 
-# to add in unconfirmed_transactions list of all peers.
+# announced transaction gets added in unconfirmed_transactions list.
 @app.route('/add_transaction', methods= ['POST'])
 def add_transaction():
 	transaction_dict = request.get_json()
@@ -91,6 +84,7 @@ def add_transaction():
 	blockchain.unconfirmed_transactions.append(transaction_dict)
 	return "Transaction added to unconfirmed_transactions and is ready to be mined!"
 
+# to view peers(all host url's from 'config_peers.py')
 @app.route('/peers', methods= ["GET"])
 def display_peers():
 	return jsonify({
@@ -98,4 +92,9 @@ def display_peers():
 		'count': len(peers)
 		})
 
-app.run(debug=True)
+# to view unconfirmed_transactions list, which can be mined into a block
+@app.route('/unconfirmed_transactions', methods= ["GET"])
+def display_unconfirmed_transactions():
+	return jsonify({
+		'unconfirmed_transactions': blockchain.unconfirmed_transactions
+		})
