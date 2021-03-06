@@ -13,14 +13,13 @@ blockchain = Blockchain()
 @app.route('/', methods= ['GET', 'POST'])
 def index():
 	if request.method == 'POST':
-		return url_for('make_transaction')
+		return url_for('process_transaction')
 	else:
 		return render_template('make_transaction.html')
 
 # to view entire blockchain
 @app.route('/chain', methods=['GET'])
 def display_chain():
-	print(blockchain.unconfirmed_transactions)
 	blocks = []
 	for each_block in blockchain.chain:
 		blocks.append(each_block.__dict__)
@@ -32,7 +31,6 @@ def display_chain():
 def mining():
 	mined_block = blockchain.mine()
 	if mined_block:
-		print(mined_block)
 		blockchain.announce_block(peers, mined_block)
 		return jsonify({'mined_block': mined_block.__dict__})
 	else:
@@ -50,7 +48,6 @@ def chain_conflict():
 @app.route('/add_block', methods=['POST'])
 def add_block():
 	block_data = request.get_json()
-	print(block_data)
 	# clearing the blockchain.unconfirmed_transaction after block having those transaction is already mined.
 	if block_data['transactions'] == blockchain.unconfirmed_transactions:
 		blockchain.unconfirmed_transactions = []
@@ -62,8 +59,8 @@ def add_block():
 	return "Block added to the chain", 201
 
 # receives form data from '/', generates signature and announces transaction.
-@app.route('/make_transaction', methods= ['POST'])
-def make_transaction():
+@app.route('/process_transaction', methods= ['POST'])
+def process_transaction():
 	readable_pk = request.form.get('pk')
 	to_addr = request.form.get('to_addr')
 	amount = request.form.get('amount')
@@ -73,14 +70,12 @@ def make_transaction():
 	signature = blockchain.generate_signature(readable_sk, msg)
 	signature = signature.hex() #converting bytes type to hex string, so it will be accepted by json.
 	blockchain.announce_transaction(peers, {'message': msg, 'signature': signature})
-	print({'message': msg, 'signature': signature})
 	return "Transaction has been made!"
 
 # announced transaction gets added in unconfirmed_transactions list.
 @app.route('/add_transaction', methods= ['POST'])
 def add_transaction():
 	transaction_dict = request.get_json()
-	print(transaction_dict)
 	blockchain.unconfirmed_transactions.append(transaction_dict)
 	return "Transaction added to unconfirmed_transactions and is ready to be mined!"
 

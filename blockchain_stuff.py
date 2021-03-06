@@ -99,11 +99,8 @@ class Blockchain:
 	# creates Blockchain obj. based on list received.
 	def create_temp_chain(self, blockchain_list):
 		temp_blockchain = Blockchain()
-		print('1', temp_blockchain.chain)
-		print('2',blockchain_list)
 		for block in blockchain_list[1:]: #because genesis block would be already there.
 			temp_block = Block(block['index'], block['block_timestamp'], block['transactions'], block['prev_hash'], block['proof_of_work'])
-			print('3', temp_block)
 			temp_blockchain.add_block(temp_block)
 		return temp_blockchain
 
@@ -114,10 +111,8 @@ class Blockchain:
 			if peer != request.host_url: #to check others chain, not current url's chain.
 				response = requests.get(peer+'chain')
 				chain = response.json()['blockchain']
-				print(chain)
 				# creating temp Blockchain obj. from json response to be able to use Blockchain's methods.
 				temp_blockchain = self.create_temp_chain(chain)
-				print('4',temp_blockchain.chain)
 				if len(temp_blockchain.chain) > len(longest_chain) and temp_blockchain.is_valid_chain(): 
 					longest_chain = temp_blockchain.chain
 		
@@ -145,7 +140,7 @@ class Blockchain:
 
 
 
-'''TODO: add documentation, valid private and public key, remove print statements'''
+'''TODO: write readme, deploy'''
 
 # set FLASK_APP=main.py
 # flask run --port 5000 --debugger --reload
