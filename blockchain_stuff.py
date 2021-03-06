@@ -137,19 +137,3 @@ class Blockchain:
 	def announce_transaction(self, peers, transaction_dict):
 		for peer in peers:
 			response = requests.post(peer+'add_transaction', json= transaction_dict)
-
-
-
-'''TODO: write readme, deploy'''
-
-# set FLASK_APP=main.py
-# flask run --port 5000 --debugger --reload
-
-'''
-private and public key samples:
-7dab777f0759fefdc763a7030821429d0b977408c6c21ae78043c56e6bdae896
-4a03d87720418f003d8fab1d3e8d8805588a4d9fee100a589f1c50b2112484facb4f3c3438a27445193ecdf4007d8325c04749f2b6e051dfae0ab1380df3fd16
-
-067a048e7dde0cf206d197cfba6c33451902fbab6bcfa83cef674c7a769aa04a
-48ef457d6dd90bbb1529c318587f3027d51b627706593ed06626186f360864f22bc01694538fc5a9d2917442e5a8b6693d9cd12bc2603cf2ba059ad16a1fbae9
-'''
