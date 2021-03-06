@@ -1,9 +1,9 @@
 # blockchain_implementation
 
-A simple blockchain implemetation with python! Though it won't transfer anything actual to a given address but it implements all the basic concepts of blockchain like 
+Simple blockchain implemetation with python! Though it won't transfer anything actual to a given address but it implements all the basic concepts of blockchain like 
 proof of work, mining, consensus, generating and validating signature on transaction etc. The best way of understanding the blockchain is by building one!
 
-### Instructions to run: 
+## Instructions to run: 
 First download the repo on your local machine using git clone:
 ```
 git clone https://github.com/Adiprogrammer7/blockchain_implementation.git
@@ -36,7 +36,7 @@ Now we will have two instances running on http://localhost:5000 and http://local
 ![index](https://user-images.githubusercontent.com/30752980/110203144-67feaa00-7e92-11eb-90f5-3a81a91153af.png)
 
 
-### How it works:
+## How it works:
 You can find private key and public key pair in ```wallet.txt```, which we generated earlier by running ```generate_wallet.py```. Using that you can make a valid transaction:  
 ![image](https://user-images.githubusercontent.com/30752980/110203408-12c39800-7e94-11eb-8689-76829381c3d4.png)
 
@@ -49,4 +49,4 @@ You can view the entire blockchain on ```/chain``` view. For example, http://loc
 
 Also there are other views like ```/peers```, ```/consensus```, ```/unconfirmed_transactions```, etc.
 
-**Open to any useful contribution :)**
+### Open to any useful contribution :)
